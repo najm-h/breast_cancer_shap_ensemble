@@ -16,7 +16,7 @@ from sklearn.metrics import (
 
 
 def main():
-    # ======= Step 1: Load the Dataset
+    # Step 1: Load the Dataset
     DATA_PATH= os.path.join("data", "data.csv")
     df=pd.read_csv(DATA_PATH)
     df.drop(columns=['id', 'Unnamed: 32'], errors='ignore', inplace=True)
@@ -26,12 +26,12 @@ def main():
     X = df.drop(columns=['diagnosis'])
     y = df['diagnosis']
 
-    # ======= Step 2: Train-Test Split =======
+    #  Step 2: Train-Test Split
     X_train_full, X_test, y_train_full, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42, stratify=y
     )
 
-    # ======= Step 3: SHAP Feature Selection =======
+    # Step 3: SHAP Feature Selection
     print("\nRunning SHAP on training set...")
     base_model = ExtraTreesClassifier(n_estimators=100, random_state=42)
     base_model.fit(X_train_full, y_train_full)
@@ -48,13 +48,13 @@ def main():
     for i, feat in enumerate (top_features, 1):
     print (f"{i:2d}.{feat}")
 
-    # ======= Step 4: Scale Features =======
+    # Step 4: Scale Features 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_full[top_features])
     X_test_scaled = scaler.transform(X_test[top_features])
     y_train_full = y_train_full.reset_index(drop=True)
 
-    # ======= Step 5: Model Definitions =======
+    #  Step 5: Model Definitions 
     et = ExtraTreesClassifier(n_estimators=200, random_state=42)
     lgbm = LGBMClassifier(n_estimators=400, learning_rate=0.02, max_depth=4,
                           num_leaves=30, colsample_bytree=0.7, subsample=0.6,
@@ -71,7 +71,7 @@ def main():
         voting='soft', weights=[1, 3, 3, 2]
     )
 
-    # ======= Step 6: Cross-Validation =======
+    #  Step 6: Cross-Validation 
     print("\nPerforming 5-Fold Stratified Cross-Validation...")
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     metrics = {'accuracy': [], 'precision': [], 'recall': [], 'f1': [], 'roc_auc': []}
@@ -93,7 +93,7 @@ def main():
 
         print(f"Fold {fold+1} - AUC: {metrics['roc_auc'][-1]:.4f}, Recall: {metrics['recall'][-1]:.4f}")
 
-    # ======= Step 6.1: Report Mean ± Std =======
+    #  Step 6.1: Report Mean ± Std 
     print("\n=== Cross-Validation Results (Mean ± Std) ===")
     for k, v in metrics.items():
         print(f"{k.capitalize():<10}: {np.mean(v):.4f} ± {np.std(v):.4f}")
@@ -105,7 +105,7 @@ def main():
         iqr = np.percentile(v, 75) - np.percentile(v, 25)
         print(f"{k.capitalize():<10}: {median:.4f} ± {iqr:.4f}")
 
-    # ======= Step 7: Final Test Set Evaluation =======
+    #  Step 7: Final Test Set Evaluation 
     print("\nFinal Test Evaluation...")
     ensemble.fit(X_train_scaled, y_train_full)
     y_prob_test = ensemble.predict_proba(X_test_scaled)[:, 1]
